@@ -22,6 +22,7 @@ export const UserProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const res = await api.post("/auth/login", { email, password }, { withCredentials: true });
+      console.log(res)
       setUser(res.data.user);
       return { success: true, user: res.data.user };
     } catch (err) {

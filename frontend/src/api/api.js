@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://clothflow-backend.onrender.com',
+  baseURL: 'https://clothflow-backend.onrender.com/api',
   withCredentials: true, 
 });
 
