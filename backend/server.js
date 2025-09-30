@@ -3,6 +3,8 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import { authRouter } from './routes/authRoutes.js';
+import  {styleRouter} from './routes/styleRoutes.js';
+import { stockRouter } from './routes/stockRoute.js';
 import cors from 'cors';
 
 dotenv.config();
@@ -20,6 +22,8 @@ app.use(cookieParser()); // Parse cookies
 
 // Routes
 app.use('/api/auth', authRouter);
+app.use('/api/styles',styleRouter)
+app.use('/api/stocks',stockRouter)
 
 // Test route
 app.get('/', (req, res) => {

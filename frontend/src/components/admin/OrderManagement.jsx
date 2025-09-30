@@ -1,62 +1,67 @@
-import React, { useState } from 'react';
+
+import React, { useState,useEffect } from 'react';
 import { Plus, ShoppingCart, Eye, Edit3, Calendar } from 'lucide-react';
 import { CirclePicker } from "react-color";
-export const OrderManagement = () => {
-  const [color, setColor] = useState("#ff0000");
-  const [orders, setOrders] = useState([
-    {
-      id: 'ORD-001',
-      design: 'Summer Dress Collection',
-      requiredKg: 45,
-      currentStage: 'Cutting',
-      progress: 25,
-      assignedWorkers: 3,
-      startDate: '2025-01-10',
-      deadline: '2025-01-20',
-      priority: 'high'
-    },
-    {
-      id: 'ORD-002',
-      design: 'Formal Shirt Series',
-      requiredKg: 30,
-      currentStage: 'Stitching',
-      progress: 60,
-      assignedWorkers: 4,
-      startDate: '2025-01-08',
-      deadline: '2025-01-18',
-      priority: 'medium'
-    },
-    {
-      id: 'ORD-003',
-      design: 'Casual Pants Line',
-      requiredKg: 60,
-      currentStage: 'Finishing',
-      progress: 90,
-      assignedWorkers: 2,
-      startDate: '2025-01-05',
-      deadline: '2025-01-15',
-      priority: 'low'
-    }
-  ]);
+import orderService from "../services/orderServices"; // backend API for orders
+import {styleService} from "../services/styleServices";
 
+export const OrderManagement = () => {
+  const [orders, setOrders] = useState([]); // your existing orders
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  const getStatusColor = (stage) => {
-    switch (stage) {
-      case 'Cutting': return 'bg-blue-100 text-blue-800';
-      case 'Stitching': return 'bg-teal-100 text-teal-800';
-      case 'Washing': return 'bg-purple-100 text-purple-800';
-      case 'Finishing': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const [styles, setStyles] = useState([]); // fetch from backend
+  const [selectedStyleId, setSelectedStyleId] = useState("");
+  const [pieces, setPieces] = useState({}); // { color: { size: number } }
+
+  useEffect(() => {
+    const fetchStyles = async () => {
+      try {
+        const data = await styleService.fetchStyles(); // fetch from backend
+        setStyles(data);
+      } catch (err) {
+        console.error("Failed to fetch styles", err);
+      }
+    };
+    fetchStyles();
+  }, []);
+
+  const handleStyleChange = (styleId) => {
+    setSelectedStyleId(styleId);
+    const style = styles.find((s) => s.id === styleId);
+    if (!style) return;
+    const initialPieces = {};
+    (style.colors || []).forEach((color) => {
+      initialPieces[color] = {};
+      (style.sizes || []).forEach((size) => {
+        initialPieces[color][size] = 0;
+      });
+    });
+    setPieces(initialPieces);
   };
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const updatePiece = (color, size, value) => {
+    setPieces((prev) => ({
+      ...prev,
+      [color]: { ...prev[color], [size]: Number(value) },
+    }));
+  };
+
+  const selectedStyle = styles.find((s) => s.id === selectedStyleId);
+
+  const handleCreateOrder = async (e) => {
+    e.preventDefault();
+    if (!selectedStyleId) return alert("Select a style first");
+    try {
+      await orderService.createOrder({
+        styleId: selectedStyleId,
+        pieces,
+      });
+      alert("Order created!");
+      setShowCreateForm(false);
+      setSelectedStyleId("");
+      setPieces({});
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -193,61 +198,61 @@ export const OrderManagement = () => {
 
       {/* Create form modal */}
       {showCreateForm && (
-        <div className="fixed inset-0  bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Create New Order</h2>
-            <form className="space-y-4">
-
+            <form className="space-y-4" onSubmit={handleCreateOrder}>
+              {/* Style select */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Style</label>
-                <select className="mb-2 w-full border p-2 rounded">
+                <select
+                  value={selectedStyleId}
+                  onChange={(e) => handleStyleChange(e.target.value)}
+                  className="w-full border p-2 rounded"
+                >
                   <option value="">Select style</option>
-
+                  {styles.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Required Kg</label>
-                <input
-                  type="number"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter required kg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Pieces</label>
-                <input
-                  type="number"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter pieces"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Colors</label>
 
-                {/* <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter pieces"
-                /> */}
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                    className="w-10 h-10 p-0 border-none rounded cursor-pointer"
-                  />
-                  <p className='text-gray-500'>choose color</p>
+              {/* Dynamic table for sizes & colors */}
+              {selectedStyle && (
+                <div className="overflow-x-auto border rounded p-3 bg-gray-50">
+                  <table className="min-w-full table-fixed">
+                    <thead>
+                      <tr>
+                        <th className="px-3 py-2 text-left">Color</th>
+                        {selectedStyle.sizes.map((size) => (
+                          <th key={size} className="px-3 py-2 text-left">{size}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedStyle.colors.map((color) => (
+                        <tr key={color} className="bg-white odd:bg-white even:bg-gray-50">
+                          <td className="px-3 py-2">{color}</td>
+                          {selectedStyle.sizes.map((size) => (
+                            <td key={size} className="px-3 py-2">
+                              <input
+                                type="number"
+                                min={0}
+                                value={pieces?.[color]?.[size] || 0}
+                                onChange={(e) => updatePiece(color, size, e.target.value)}
+                                className="w-20 px-2 py-1 border rounded text-sm"
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+              )}
 
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
-                <input
-                  type="date"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
               <div className="flex space-x-3 pt-4">
                 <button
                   type="button"

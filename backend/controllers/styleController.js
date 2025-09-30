@@ -1,10 +1,7 @@
 // controllers/styleController.js
-import { Style } from '../models/Style.js';
+import { Style } from '../models/StyleSchema.js';
 
-/**
- * GET /api/styles
- */
-export const getAllStyles = async (req, res) => {
+export async function getStyles(req, res) {
   try {
     const styles = await Style.find().sort({ createdAt: -1 });
     res.json({ success: true, data: styles });
@@ -12,106 +9,37 @@ export const getAllStyles = async (req, res) => {
     console.error(err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
-};
+}
 
-/**
- * GET /api/styles/:id
- */
-export const getStyleById = async (req, res) => {
+export async function createStyle(req, res) {
   try {
-    const style = await Style.findById(req.params.id);
-    if (!style) return res.status(404).json({ success: false, message: 'Style not found' });
-    res.json({ success: true, data: style });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-};
+    const { name, skuId, photos = [], sizes = [], colors = [], steps = [] } = req.body;
 
-/**
- * POST /api/styles
- * Body: { name, steps? }
- */
-export const createStyle = async (req, res) => {
-  try {
-    const { name, steps } = req.body;
-    if (!name) return res.status(400).json({ success: false, message: 'Name is required' });
+    if (!name || !skuId) {
+      return res.status(400).json({ success: false, message: 'name and skuId are required' });
+    }
 
-    const style = new Style({
-      name,
-      steps: Array.isArray(steps) ? steps : []
-    });
-
-    await style.save();
+    // optional: enforce uniqueness of skuId handled by mongoose unique index
+    const style = await Style.create({ name, skuId, photos, sizes, colors, steps });
     res.status(201).json({ success: true, data: style });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-};
-
-/**
- * PUT /api/styles/:id
- * Body: { name?, steps? } - replace provided fields
- */
-export const updateStyle = async (req, res) => {
-  try {
-    const { name, steps } = req.body;
-    const update = {};
-    if (name !== undefined) update.name = name;
-    if (steps !== undefined) update.steps = steps;
-
-    const style = await Style.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
-    if (!style) return res.status(404).json({ success: false, message: 'Style not found' });
-    res.json({ success: true, data: style });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-};
-
-/**
- * PATCH /api/styles/:id/steps
- * Body examples:
- *  - { steps: [...] }         -> replace all steps
- *  - { index: 2, enabled: true } -> update single step by index
- */
-export const patchSteps = async (req, res) => {
-  try {
-    const { steps, index, enabled } = req.body;
-    const style = await Style.findById(req.params.id);
-    if (!style) return res.status(404).json({ success: false, message: 'Style not found' });
-
-    if (Array.isArray(steps)) {
-      style.steps = steps;
-    } else if (typeof index === 'number' && typeof enabled === 'boolean') {
-      if (index < 0 || index >= style.steps.length) {
-        return res.status(400).json({ success: false, message: 'Index out of range' });
-      }
-      style.steps[index].enabled = enabled;
-    } else {
-      return res.status(400).json({ success: false, message: 'Invalid payload' });
+    // duplicate key (skuId)
+    if (err.code === 11000) {
+      return res.status(400).json({ success: false, message: 'skuId already exists' });
     }
-
-    await style.save();
-    res.json({ success: true, data: style });
-  } catch (err) {
-    console.error(err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
-};
+}
 
-/**
- * DELETE /api/styles/:id
- */
-export const deleteStyle = async (req, res) => {
+export async function deleteStyle(req, res) {
   try {
-    const style = await Style.findByIdAndDelete(req.params.id);
-    if (!style) return res.status(404).json({ success: false, message: 'Style not found' });
-    res.json({ success: true, message: 'Style deleted' });
+    const { id } = req.params;
+    const deleted = await Style.findByIdAndDelete(id);
+    if (!deleted) return res.status(404).json({ success: false, message: 'Not found' });
+    res.json({ success: true, message: 'Deleted' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
-};
-    
+}

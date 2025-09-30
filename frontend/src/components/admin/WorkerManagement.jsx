@@ -9,7 +9,7 @@ import {
   Briefcase,
 } from "lucide-react";
 
-const WorkerManagement = () => {
+export const WorkerManagement = () => {
   const [workers, setWorkers] = useState([
     {
       id: 1,
@@ -303,4 +303,4 @@ const WorkerManagement = () => {
   );
 };
 
-export default WorkerManagement;
+

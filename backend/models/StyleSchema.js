@@ -2,13 +2,17 @@
 import mongoose from 'mongoose';
 
 const StepSchema = new mongoose.Schema({
-  label: { type: String, required: true },   // e.g. "Step 1"
-  enabled: { type: Boolean, default: false } // checkbox state
+  label: { type: String, required: true },
+  price: { type: Number, default: 0 }
 }, { _id: false });
 
 const StyleSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
-  steps: { type: [StepSchema], default: [] }, // array of StepSchema
+  skuId: { type: String, required: true, unique: true },
+  photos: [{ type: String }], // Cloudinary URLs
+  sizes: [{ type: String }],  // flexible sizes
+  colors: [{ type: String }],
+  steps: { type: [StepSchema], default: [] },
   createdAt: { type: Date, default: Date.now }
 });
 

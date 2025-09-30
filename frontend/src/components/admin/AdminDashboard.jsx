@@ -1,52 +1,11 @@
-import React, { useState } from 'react';
+// src/components/admin/AdminDashboard.jsx
+import React, { useEffect, useState } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from '../utils/Sidebar';
 import { Topbar } from '../utils/Topbar';
-import { StockManagement } from './StockManagement';
-import { OrderManagement } from './OrderManagement';
-import { ProcessTracking } from './ProcessTracking';
-import { WorkerPerformance } from './WorkerPerformance';
-import StyleManagement from './StyleManagement';
-import { Reports } from './Reports';
-import WorkerManagement from './WorkerManagement';
 
-export const AdminDashboard = ({ user, onLogout }) => {
-  const [activeTab, setActiveTab] = useState('overview');
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'stock':
-        return <StockManagement />;
-      case 'style':
-        return <StyleManagement />;
-      case 'orders':
-        return <OrderManagement />;
-      case 'processes':
-        return <ProcessTracking />;
-      case 'manage-worker':
-        return <WorkerManagement />;
-      case 'workers':
-        return <WorkerPerformance />;
-      case 'reports':
-        return <Reports />;
-      default:
-        return <Overview />;
-    }
-  };
-
-  return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Topbar user={user} onLogout={onLogout} />
-        <main className="flex-1 overflow-auto p-6">
-          {renderContent()}
-        </main>
-      </div>
-    </div>
-  );
-};
-
-const Overview = () => {
+// --- keep Overview here and export it so App.jsx can import it ---
+export const Overview = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -135,10 +94,10 @@ const Overview = () => {
                 <div className="text-right">
                   <p className="text-sm font-medium text-gray-900">{order.status}</p>
                   <div className="w-20 h-2 bg-gray-200 rounded-full mt-1">
-                    <div 
+                    <div
                       className="h-full bg-blue-600 rounded-full transition-all duration-300"
                       style={{ width: `${order.progress}%` }}
-                    ></div>
+                    />
                   </div>
                 </div>
               </div>
@@ -172,3 +131,75 @@ const Overview = () => {
     </div>
   );
 };
+
+// --- Admin layout that renders the Sidebar, Topbar and the nested route content via Outlet ---
+const AdminDashboard = ({ user, onLogout }) => {
+  const [activeTab, setActiveTab] = useState('overview');
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // keep activeTab synced with current path (so Sidebar highlight works)
+  useEffect(() => {
+    // location.pathname might be like "/styles" or "/dashboard"
+    const path = location.pathname.replace(/^\//, ''); // remove leading slash
+    switch (path) {
+      case '':
+      case 'dashboard':
+        setActiveTab('overview');
+        break;
+      case 'styles':
+        setActiveTab('style');
+        break;
+      case 'stock':
+        setActiveTab('stock');
+        break;
+      case 'orders':
+        setActiveTab('orders');
+        break;
+      case 'processes':
+        setActiveTab('processes');
+        break;
+      case 'manage-worker':
+        setActiveTab('manage-worker');
+        break;
+      case 'workers':
+        setActiveTab('workers');
+        break;
+      case 'reports':
+        setActiveTab('reports');
+        break;
+      default:
+        setActiveTab('overview');
+    }
+  }, [location.pathname]);
+
+  // optional helper to programmatically navigate + set activeTab
+  const handleNavigate = (tabKey) => {
+    setActiveTab(tabKey);
+    const route =
+      tabKey === 'overview' ? '/dashboard' :
+      tabKey === 'style' ? '/styles' :
+      tabKey === 'stock' ? '/stock' :
+      tabKey === 'orders' ? '/orders' :
+      tabKey === 'processes' ? '/processes' :
+      tabKey === 'manage-worker' ? '/manage-worker' :
+      tabKey === 'workers' ? '/workers' :
+      tabKey === 'reports' ? '/reports' : '/dashboard';
+    navigate(route);
+  };
+
+  return (
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar activeTab={activeTab} onTabChange={handleNavigate} />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Topbar user={user} onLogout={onLogout} />
+        <main className="flex-1 overflow-auto p-6">
+          {/* This Outlet renders the child route (Overview, StyleManagement etc.) */}
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;

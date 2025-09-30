@@ -1,6 +1,6 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect, useContext } from "react";
 import api from "../../api/api"; // axios instance with { withCredentials: true }
-
+import * as authService from '../services/authServices'
 const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
@@ -11,7 +11,7 @@ export const UserProvider = ({ children }) => {
     (async () => {
       try {
         const res = await api.get("/auth/me"); // backend should read JWT from cookie
-        setUser(res.data.user || null);
+        setUser(res.data.user || null);   
       } catch (err) {
         setUser(null);
       }
@@ -20,36 +20,21 @@ export const UserProvider = ({ children }) => {
 
   // Login: backend sets JWT cookie
   const login = async (email, password) => {
-    try {
-      const res = await api.post("/auth/login", { email, password }, { withCredentials: true });
-      console.log(res)
-      setUser(res.data.user);
-      return { success: true, user: res.data.user };
-    } catch (err) {
-      return { success: false, message: err.response?.data?.message || "Login failed" };
-    }
+    const result = await authService.login(email, password);
+    if (result.success) setUser(result.user);
+    return result;
   };
 
-  // Signup: backend sets JWT cookie
   const signup = async (formData) => {
-    try {
-      const res = await api.post("/auth/signup", formData, { withCredentials: true });
-      setUser(res.data.user);
-      return { success: true, user: res.data.user };
-    } catch (err) {
-      return { success: false, message: err.response?.data?.message || "Signup failed" };
-    }
+    const result = await authService.signup(formData);
+    if (result.success) setUser(result.user);
+    return result;
   };
 
-  // Logout: backend clears JWT cookie
   const logout = async () => {
-    try {
-      await api.post("/auth/logout", {}, { withCredentials: true });
-      setUser(null);
-      return { success: true };
-    } catch (err) {
-      return { success: false, message: err.response?.data?.message || "Logout failed" };
-    }
+    const result = await authService.logout();
+    if (result.success) setUser(null);
+    return result;
   };
 
   return (
@@ -58,5 +43,8 @@ export const UserProvider = ({ children }) => {
     </UserContext.Provider>
   );
 };
+
+
+export const useUser = () => useContext(UserContext);
 
 export default UserContext;
